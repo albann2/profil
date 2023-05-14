@@ -1,36 +1,136 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
-
-import 'Screen/home.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'firebase_options.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp();
-  runApp(const MyApp());
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  runApp(MyApp());
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
-
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Profil Academique',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // Try running your application with "flutter run". You'll see the
-        // application has a blue toolbar. Then, without quitting the app, try
-        // changing the primarySwatch below to Colors.green and then invoke
-        // "hot reload" (press "r" in the console where you ran "flutter run",
-        // or simply save your changes to "hot reload" in a Flutter IDE).
-        // Notice that the counter didn't reset back to zero; the application
-        // is not restarted.
-        primarySwatch: Colors.blue,
+      title: 'Tableau des notes',
+      theme: ThemeData(primarySwatch: Colors.blue,),
+      home: TableauPage(title: 'Tableau des notes'),
+    );
+  }
+}
+
+class TableauPage extends StatefulWidget {
+  TableauPage({Key? key, required this.title}) : super(key: key);
+  
+  final String title;
+
+  @override
+  _TableauPageState createState() => _TableauPageState();
+}
+
+class _TableauPageState extends State<TableauPage> {
+  final _controller = TextEditingController();
+  List<Map<String, String>> notes = [];
+  String nome='';
+
+  void getNotes(String documentId) async {
+  notes.clear();
+    final querySnapshot = await FirebaseFirestore.instance
+        .collection('Etudiant')
+        .doc(documentId)
+        .get();
+    final nom = querySnapshot.data()!['nom'];
+    nome=nom;
+    final pv = querySnapshot.data()!['pv'].cast<Map<String, dynamic>>();
+    pv.forEach((map) {
+      final ue = map['ue'];
+      final credit = map['credit'];
+      final cc = map['cc'];
+      final sn = map['sn'];
+      final tp = map['tp'];
+      notes.add({
+        'ue': ue, 
+        'credit': credit.toString(), 
+        'cc': cc.toString(), 
+        'sn': sn.toString(),
+        'tp': tp.toString()
+      });
+    });
+    setState(() {}); // rafraîchir l'affichage pour afficher les nouvelles notes
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(widget.title),
+        centerTitle:true,
       ),
-      home: const HomePage(),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            SizedBox(
+              width: MediaQuery.of(context).size.width * 0.8,
+              child: TextFormField(
+                controller: _controller,
+                decoration: InputDecoration(
+                  hintText: 'Valeur à passer à getNotes()',
+                ),
+              ),
+            ),
+            SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: () {
+                  setState(() {});
+                getNotes(_controller.text);
+              },
+              child: Text('Afficher les notes'),
+            ),
+            SizedBox(
+              height: 20,
+            ),
+            SizedBox(
+              width: MediaQuery.of(context).size.width * 0.8,
+              child: Text('Nom : $nome',
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+),
+            Container(
+              height: 250,
+              width: MediaQuery.of(context).size.width * 0.8,
+              child: Table(
+                border: TableBorder.all(
+                  color: Colors.black,
+                  width: 2.0,
+                  style: BorderStyle.solid,
+                ),
+                children: [
+                  TableRow(
+                    decoration: BoxDecoration(color: Theme.of(context).primaryColor),
+                    children: [
+                      Center(child: Text('UE', style: TextStyle(color: Colors.white))),
+                      Center(child: Text('CC', style: TextStyle(color: Colors.white))),
+                      Center(child: Text('Credit', style: TextStyle(color: Colors.white))),
+                      Center(child: Text('Note_SN', style: TextStyle(color: Colors.white))),
+                      Center(child: Text('Note_TP', style: TextStyle(color: Colors.white))),
+                    ],
+                  ),
+                  for(var note in notes)
+                    TableRow(
+                      children: [
+                        Center(child: Text(note['ue']??'')),
+                        Center(child: Text(note['cc']??'')),
+                        Center(child: Text(note['credit']??'')),
+                        Center(child: Text(note['sn']??'')),
+                        Center(child: Text(note['tp']??'')),],
+                    ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
