@@ -1,4 +1,7 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:profil/Screen/admin/signin.dart';
+import './client/info.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -11,6 +14,42 @@ class _HomePage extends State<HomePage> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final RegExp emailRegex = RegExp(r"[0-9]+[a-zA-Z]+[0-9]+");
   String _matricule = " ";
+  TextEditingController matriculecontoller = new TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    matriculecontoller.text = '';
+  }
+
+  Future<DocumentSnapshot<Map<String, dynamic>>> getEtudiantDocument(
+      String matricule) async {
+    try {
+      DocumentSnapshot<Map<String, dynamic>> doc = await FirebaseFirestore
+          .instance
+          .collection('Etudiant')
+          .doc(matricule)
+          .get();
+
+      if (doc.exists) {
+        // Le document existe, vous pouvez y accéder ici
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) =>
+                Infos(matricule: matriculecontoller.text.trim()),
+          ),
+        );
+        return doc;
+      } else {
+        // Le document n'existe pas
+        throw Exception("Le document n'existe pas");
+      }
+    } catch (e) {
+      // Une erreur s'est produite lors de la récupération du document
+      throw Exception("Erreur lors de la récupération du document : $e");
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -23,10 +62,15 @@ class _HomePage extends State<HomePage> {
           actions: [
             IconButton(
               icon: Icon(
-                Icons.drive_file_rename_outline_outlined,
-                color: Colors.black,
+                Icons.admin_panel_settings,
+                color: Colors.blue,
               ),
-              onPressed: () {},
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => AdminSignInScreen()),
+                );
+              },
             ),
           ],
         ),
@@ -38,24 +82,11 @@ class _HomePage extends State<HomePage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    SizedBox(
-                      height: 50,
-                      width: 80,
-                      child: Icon(
-                        Icons.account_circle,
-                        size: 60,
-                      ),
-                    ),
-                  ],
-                ),
                 Center(
                   child: Text(
                     'Profil Academique',
                     style: TextStyle(
-                      color: Colors.black,
+                      color: Colors.blue,
                       fontSize: 20.0,
                     ),
                   ),
@@ -69,6 +100,7 @@ class _HomePage extends State<HomePage> {
                         height: 50,
                       ),
                       TextFormField(
+                        controller: matriculecontoller,
                         onChanged: (value) =>
                             setState(() => _matricule = value),
                         validator: (value) =>
@@ -76,7 +108,7 @@ class _HomePage extends State<HomePage> {
                                 ? 'Please enter a valid id'
                                 : null,
                         decoration: InputDecoration(
-                          hintText: 'Ex: 21Q2523',
+                          hintText: '21Q2439',
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(0.0),
                             borderSide: BorderSide(color: Colors.grey),
@@ -97,21 +129,10 @@ class _HomePage extends State<HomePage> {
                             horizontal: 0.0,
                           ),
                           elevation: 0,
+                          backgroundColor: Colors.amber,
                         ),
-                        onPressed: /*!emailRegex.hasMatch(_matricule)
-                            ? null
-                            :*/
-                            () {
-                          print(_matricule);
-                          if (_formKey.currentState!.validate()) {
-                            print(_matricule);
-                            //widget.onChangedStep(1, _matricule);
-                            /*Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                        builder: (context) => PasswordSreen()),
-                                  );*/
-                          }
+                        onPressed: () {
+                          getEtudiantDocument(_matricule);
                         },
                         child: Text(
                           'Continuer'.toUpperCase(),
